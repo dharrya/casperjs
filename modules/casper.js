@@ -173,6 +173,7 @@ var Casper = function Casper(options) {
         }
         return this._test;
     });
+    this.scope = null;
 
     // init phantomjs error handler
     this.initErrorHandler();
@@ -835,6 +836,7 @@ Casper.prototype.fillForm = function fillForm(selector, vals, options) {
  */
 Casper.prototype.fillNames = function fillNames(formSelector, vals, submit) {
     "use strict";
+
     return this.fillForm(formSelector, vals, {
         submit: submit,
         selectorType: 'names'
@@ -2305,6 +2307,149 @@ Casper.prototype.zoom = function zoom(factor) {
     }
     this.page.zoomFactor = factor;
     return this;
+};
+
+/**
+ * Retrieves the HTML content for the current context.
+ *
+ * @param  Boolean  outer     Whether to fetch outer HTML contents (default: false)
+ * @return String
+ */
+Casper.prototype.getSelfHTML = function getSelfHTML(outer) {
+    "use strict";
+    this.checkStarted();
+    return '' + this.evaluate(function _getSelfHTML(outer) {
+        if (outer)
+            return __utils__.currentScope.outerHTML;
+        else
+            return __utils__.currentScope.innerHTML;
+    }, !!outer);
+};
+
+/**
+ * Emulates an event on the current context node using the mouse pointer, if possible.
+ *
+ * In case of success, `true` is returned, `false` otherwise.
+ *
+ * @param  String   type      Type of event to emulate
+ * @return Boolean
+ */
+Casper.prototype.selfMouseEvent = function selfMouseEvent(type) {
+    "use strict";
+    return this.mouseEvent(type, undefined);
+};
+
+
+/**
+ * Emulates a click on the current context node using the mouse
+ * pointer, if possible.
+ *
+ * In case of success, `true` is returned, `false` otherwise.
+ *
+ * @return Boolean
+ */
+Casper.prototype.selfClick = function selfClick() {
+    "use strict";
+    return this.click(undefined);
+};
+
+/**
+ * Checks if an current context is visible current page DOM
+ * by checking that offsetWidth and offsetHeight are both non-zero.
+ *
+ * @return Boolean
+ */
+Casper.prototype.selfVisible = function selfVisible() {
+    "use strict";
+    this.checkStarted();
+    return !!this.evaluate(function _selfVisible() {
+        return __utils__.visibleOne();
+    });
+};
+
+/**
+ * Fills a form in current context, with provided field values using the Name attribute.
+ *
+ * @param  Object vals      Field values
+ * @param  Object options   The fill settings (optional)
+ */
+Casper.prototype.selfFill =
+Casper.prototype.selfFillNames = function selfFillNames(vals, submit) {
+    "use strict";
+
+    return this.fillForm(undefined, vals, {
+        submit: submit,
+        selectorType: 'names'
+    });
+};
+
+/**
+ * Retrieves information about a DOM element of current context.
+ *
+ * @return Object
+ */
+Casper.prototype.getSelfInfo = function getSelfInfo() {
+    "use strict";
+    return this.getElementInfo();
+};
+
+/**
+ * Retrieves boundaries for a DOM element of current context.
+ *
+ * @return Object
+ */
+Casper.prototype.getSelfBounds = function getSelfBounds() {
+    "use strict";
+    return this.getElementBounds();
+};
+
+/**
+ * Retrieves the value of an attribute on the DOM element of current context.
+ *
+ * @param  String  attribute  The attribute name to lookup
+ * @return String  The requested DOM element attribute value
+ */
+Casper.prototype.getSelfAttribute =
+Casper.prototype.getSelfAttr = function getSelfAttr(attribute) {
+    "use strict";
+    return this.getElementAttr(undefined, attribute);
+};
+
+/**
+ * Retrieves a form of current context all of its field values.
+ *
+ * @return Object
+ */
+Casper.prototype.getSelfFormValues = function getSelfFormValues() {
+    "use strict";
+    return this.getFormValues();
+};
+
+/**
+ * Makes the node matching the provided selector as the currently context node.
+ *
+ * @param  String  selector    DOM CSS3/XPath selector
+ * @param  Function  then      Next step function
+ * @return Casper
+ */
+Casper.prototype.within = function within(selector, then) {
+    "use strict";
+    this.checkStarted();
+    this.then(function _check() {
+        if (!this.exists(selector))
+            throw new CasperError(f('Element with selector "%s" was not found.', selector));
+    });
+    this.then(function _step() {
+        this.scope = this.evaluate(function chrangeScope(selector) {
+            return __utils__.changeScope(selector);
+        }, selector);
+    });
+    this.then(then);
+    this.then(function _step() {
+        this.scope = this.evaluate(function restoreScope() {
+            __utils__.restoreScope();
+        });
+    });
 };
 
 /**

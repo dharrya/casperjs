@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>CasperJS test within</title>
+    </head>
+    <body>
+        <form action="result.html" enctype="multipart/form-data">
+            <input type="text" name="email" placeholder="email">
+            <input type="text" name="language" value="language value">
+            <textarea name="content"></textarea>
+            <select name="topic">
+                <option>foo</option>
+                <option value="bar">baz</option>
+            </select>
+        </form>
+        <form id="no-type-test-form" action="#" enctype="multipart/form-data">
+            <a href="javascript:void(0)" onclick="document.body.innerHTML += 'clicked!'">
+                some link...
+            </a>
+            <input name="notype">
+            <input name="email" value="original value">
+        <form>
+    </body>
+</html>

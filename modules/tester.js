@@ -598,6 +598,21 @@ Tester.prototype.assertInvisible = function assertNotVisible(selector, message) 
 };
 
 /**
+ * Asserts that a current context node is not currently visible.
+ *
+ * @param  String  message   Test description
+ * @return Object            An assertion result object
+ */
+Tester.prototype.assertSelfNotVisible =
+Tester.prototype.assertSelfInvisible = function assertSelfInvisible(message) {
+    "use strict";
+    return this.assert(!this.casper.selfVisible(), message, {
+        type: "assertSelfVisible",
+        standard: "Element of current scope is not visible"
+    });
+};
+
+/**
  * Asserts that the provided function called with the given parameters
  * will raise an exception.
  *
@@ -668,6 +683,29 @@ Tester.prototype.assertTextDoesntExist = function assertTextDoesntExist(text, me
 };
 
 /**
+ * Asserts that given text doesn't exist in the current scope.
+ *
+ * @param  String  text     Text not to be found
+ * @param  String  message  Test description
+ * @return Object           An assertion result object
+ */
+Tester.prototype.assertSelfTextDoesntExist =
+Tester.prototype.assertSelfTextDoesntExist = function assertSelfTextDoesntExist(text, message) {
+    "use strict";
+    var textFound = (this.casper.evaluate(function _evaluate() {
+        var element = __utils__.currentScope;
+        return element.textContent || element.innerText;
+    }).indexOf(text) === -1);
+    return this.assert(textFound, message, {
+        type: "assertSelfTextDoesntExist",
+        standard: "Text doesn't exist within the current context",
+        values: {
+            text: text
+        }
+    });
+};
+
+/**
  * Asserts that given text exists in the document body.
  *
  * @param  String  text     Text to be found
@@ -683,6 +721,29 @@ Tester.prototype.assertTextExist = function assertTextExists(text, message) {
     return this.assert(textFound, message, {
         type: "assertTextExists",
         standard: "Found expected text within the document body",
+        values: {
+            text: text
+        }
+    });
+};
+
+/**
+ * Asserts that given text exists in the current scope.
+ *
+ * @param  String  text     Text to be found
+ * @param  String  message  Test description
+ * @return Object           An assertion result object
+ */
+Tester.prototype.assertSelfTextExists =
+Tester.prototype.assertSelfTextExist = function assertSelfTextExists(text, message) {
+    "use strict";
+    var textFound = (this.casper.evaluate(function _evaluate() {
+        var element = __utils__.currentScope;
+        return element.textContent || element.innerText;
+    }).indexOf(text) !== -1);
+    return this.assert(textFound, message, {
+        type: "assertTextExists",
+        standard: "Found expected text within the current context",
         values: {
             text: text
         }
@@ -909,6 +970,20 @@ Tester.prototype.assertVisible = function assertVisible(selector, message) {
         values: {
             selector: selector
         }
+    });
+};
+
+/**
+ * Asserts that a current context node expression is currently visible.
+ *
+ * @param  String  message   Test description
+ * @return Object            An assertion result object
+ */
+Tester.prototype.assertSelfVisible = function assertSelfVisible(message) {
+    "use strict";
+    return this.assert(this.casper.selfVisible(), message, {
+        type: "assertSelfVisible",
+        standard: "Scope element is visible"
     });
 };
 

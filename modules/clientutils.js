@@ -54,11 +54,14 @@
             -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
             41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
         );
-        var SUPPORTED_SELECTOR_TYPES = ['css', 'xpath'];
+        var SUPPORTED_SELECTOR_TYPES = ['css', 'xpath', 'none'];
 
         // public members
         this.options = options || {};
         this.options.scope = this.options.scope || document;
+        this.currentScope = this.options.scope;
+        this.scopeStack = [];
+
         /**
          * Clicks on the DOM element behind the provided selector.
          *
@@ -293,11 +296,13 @@
          * @return NodeList|undefined
          */
         this.findAll = function findAll(selector, scope) {
-            scope = scope || this.options.scope;
+            scope = scope || this.currentScope;
             try {
                 var pSelector = this.processSelector(selector);
                 if (pSelector.type === 'xpath') {
                     return this.getElementsByXPath(pSelector.path, scope);
+                } else if(pSelector.type === 'none') {
+                    return [scope];
                 } else {
                     return scope.querySelectorAll(pSelector.path);
                 }
@@ -314,10 +319,13 @@
          * @return HTMLElement|undefined
          */
         this.findOne = function findOne(selector, scope) {
-            scope = scope || this.options.scope;
+            scope = scope || this.currentScope;
             try {
+
                 var pSelector = this.processSelector(selector);
-                if (pSelector.type === 'xpath') {
+                if(pSelector.type === 'none') {
+                    return scope;
+                } else if (pSelector.type === 'xpath') {
                     return this.getElementByXPath(pSelector.path, scope);
                 } else {
                     return scope.querySelector(pSelector.path);
@@ -382,7 +390,7 @@
          * {top: y, left: x, width: w, height:, h}
          *
          * @param  String  selector
-         * @return Object or null
+         * @return Object or nullthis.options.scope
          */
         this.getElementBounds = function getElementBounds(selector) {
             try {
@@ -491,7 +499,7 @@
          * @return HTMLElement or null
          */
         this.getElementByXPath = function getElementByXPath(expression, scope) {
-            scope = scope || this.options.scope;
+            scope = scope || this.currentScope;
             var a = document.evaluate(expression, scope, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
             if (a.snapshotLength > 0) {
                 return a.snapshotItem(0);
@@ -506,7 +514,7 @@
          * @return Array
          */
         this.getElementsByXPath = function getElementsByXPath(expression, scope) {
-            scope = scope || this.options.scope;
+            scope = scope || this.currentScope;
             var nodes = [];
             var a = document.evaluate(expression, scope, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
             for (var i = 0; i < a.snapshotLength; i++) {
@@ -656,7 +664,12 @@
                     return this.type + ' selector: ' + this.path;
                 }
             };
-            if (typeof selector === "string") {
+
+            if (!selector) {
+                selectorObject.type = 'none';
+                selectorObject.path = null;
+                return selectorObject;
+            } else if (typeof selector === "string") {
                 // defaults to CSS selector
                 selectorObject.type = "css";
                 selectorObject.path = selector;
@@ -832,6 +845,43 @@
          */
         this.visible = function visible(selector) {
             return [].some.call(this.findAll(selector), this.elementVisible);
+        };
+
+        /**
+         * Checks DOM element matching a given selector is visible in remote page.
+         *
+         * @param  String selector  CSS3 selector
+         * @return Boolean
+         */
+        this.visibleOne = function visibleOne(selector) {
+            return this.elementVisible(this.findOne(selector));
+        };
+
+        /**
+         * Makes the node matching the provided selector as the current scope node
+         * and store previously scope node to the stack.
+         *
+         * @param  String selector  CSS3 selector
+         * @return HTMLElement
+         */
+        this.changeScope = function changeScope(selector) {
+            this.scopeStack.push(this.currentScope);
+            this.currentScope = this.findOne(selector);
+            return this.currentScope;
+        };
+
+        /**
+         * Get one node from the stack and makes it the current scope node.
+         *
+         * @param  String selector  CSS3 selector
+         * @return HTMLElement or null if we took last node in the stack
+         */
+        this.restoreScope = function restoreScope() {
+            this.currentScope = this.scopeStack.pop();
+            if (this.scopeStack.length === 0)
+                return null;
+            else
+                return this.currentScope;
         };
     };
 })(typeof exports === "object" ? exports : window);
